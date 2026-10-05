@@ -1,0 +1,5 @@
+# Generated or not meant to be formatted
+package-lock.json
+**/dist/
+**/coverage/
+*.md

@@ -1,0 +1,189 @@
+# {{ project.name }} — agent guide
+
+Rules and workflows for AI coding agents working in this repository. Humans start with `README.md`.
+{%- if options.spec_md %}
+
+**Read `SPEC.md` first.** It lists the extensions this workspace should contain and what each one must do. If it is incomplete, complete it with the owner before building, and keep it current as decisions are made.
+{%- endif %}
+
+## What this repository is
+
+An npm **workspace of Chrome extensions**. Every top-level folder with a `manifest.config.ts` is one extension (Manifest V3, Vue 3, Tailwind CSS 4, TypeScript) with its own `.env`, `dist/` and tests. All extensions share **one** `node_modules` and **one** `package-lock.json` in the root. `template-extension/` is the base that `npm run new` copies for every new extension; keep it working and generic.
+
+## Stack
+
+- **Chrome Manifest V3**: a service worker (ES module), a side panel page that also works as a popup, `chrome.storage.local`. `dist/manifest.json` is generated at build time; the manifest needs Chrome 141+.
+- **UI**: Vue 3 (`<script setup lang="ts">`), Pinia (option stores), Vue Router (hash history), Tailwind CSS 4 through `@tailwindcss/vite`, Font Awesome icons (`<FontAwesomeIcon>` registered globally).
+- **Build**: Vite 8 builds `index.html` and `src/background/service-worker.ts` into `<extension>/dist`; there is no dev server — Chrome loads `dist/` from disk.
+- **Tooling**: Node.js ≥ 24, npm workspaces (`"workspaces": ["*/"]`), TypeScript 6.0 strict (vue-tsc), ESLint with type-aware typescript-eslint rules, Prettier, Vitest with jsdom and `@vue/test-utils`. The root scripts in `scripts/` run with Node's built-in TypeScript support (no build step).
+
+## Workspace map
+
+```text
+.env / .env.example        APP_NAME: the workspace name, printed by the root scripts (.env is git-ignored)
+package.json               workspaces, shared dependencies, root scripts
+package-lock.json          the only lockfile
+node_modules/              the only node_modules, shared by all extensions (also holds Vite caches)
+eslint.config.js           lint rules for every folder, including the layer rule (see below)
+tsconfig.base.json         strict compiler options shared by the root and all extensions
+tsconfig.json              type-checks scripts/ and the root configs (Node)
+vitest.config.ts           test projects: scripts + every <extension>/vitest.config.ts
+scripts/
+  dev.ts                   npm run dev: `vite build --watch` for every extension, prefixed output
+  new-extension.ts         npm run new: copy template-extension/, personalise it, npm install
+  package.ts               npm run package: zip <extension>/dist into <extension>/extension.zip
+  lib/workspace.ts         listing workspaces/extensions, workspace name, running npm
+  lib/new-extension.ts     slug, copy filter, .env writing, createExtension() (+ tests next to it)
+template-extension/        the base extension (structure below)
+<extension>/               every extension created with npm run new has the same structure
+```
+
+### Structure of an extension
+
+```text
+<extension>/
+  .env / .env.example      VITE_EXTENSION_NAME, _DESCRIPTION, _VERSION, VITE_STORAGE_NAMESPACE
+  package.json             name = folder name; scripts build, dev, typecheck, test; own dependencies only
+  manifest.config.ts       createManifest(): permissions, entry points, icons; readExtensionSettings() checks .env
+  manifest.config.test.ts
+  vite.config.ts           inputs (index.html, service worker), manifest.json, creates .env from .env.example
+  vitest.config.ts         test project of this extension (jsdom, fixed VITE_* values)
+  tsconfig.json            extends ../tsconfig.base.json; DOM + chrome + node + vite/client types
+  index.html               the page for the side panel and the popup (title set in src/main.ts)
+  public/icons/            16/32/48/128 px PNG icons and the SVG source (placeholders)
+  src/
+    main.ts, App.vue, app.css   bootstrap (Pinia, router, FontAwesomeIcon, popup class), Tailwind entry
+    env.d.ts, shims-vue.d.ts    types of import.meta.env.VITE_* and global components; .vue shim for ESLint
+    config/extensionConfig.ts   the .env settings for app code (the only reader of import.meta.env)
+    router/index.ts             routes (hash history: extension pages are static files)
+    views/<Name>View.vue        route components
+    components/                 reusable components; AppShell.vue = header + open-mode switch + <RouterView>
+    stores/use<Name>Store.ts    Pinia option stores, one per data domain
+    services/chrome/            wrappers of chrome.* APIs (openModeService.ts)
+    services/storage/           repositories on chrome.storage.local (localStorageRepository.ts)
+    services/api/apiClient.ts   the only place that calls fetch
+    background/service-worker.ts  the service worker (restores the open mode)
+    test/chromeStub.ts          in-memory chrome.* for tests
+    **/*.test.ts                tests next to the code
+  dist/                    build output loaded by Chrome (git-ignored)
+  extension.zip            store package from npm run package (git-ignored)
+```
+
+## Architecture rules
+
+```text
+view / component → Pinia store → service / repository → chrome.* · chrome.storage · fetch
+service worker   →               service / repository → chrome.*
+```
+
+- **Views and components** render state and call store actions. They never use `chrome.*`, `fetch`, `localStorage`, `sessionStorage` or `indexedDB` — ESLint (`no-restricted-globals`) enforces it for everything in `src/` except `services/`, `background/`, `test/` and tests. Components in `src/components` take props and emit events; only `AppShell` and views use stores.
+- **Stores** (`src/stores`) own UI state and call services. Actions catch failures, log them and expose a message in `error` (they do not throw), and keep the previous state when saving fails.
+- **Services** (`src/services/chrome`) wrap Chrome APIs; **repositories** (`src/services/storage`) persist data in `chrome.storage.local` through `createLocalStorageRepository(key, fallback)`. Keys are plain, stable names (`notes`) and never contain the extension name: storage is already private to each extension, and a name change must not lose data. `src/services/api/apiClient.ts` is the only HTTP client.
+- **The service worker** has no DOM and Chrome stops it when idle: register listeners synchronously at the top level, keep state in `chrome.storage`, not in variables, and import services instead of duplicating logic. It is built as an ES module; shared code becomes chunks in `dist/assets/`.
+- **Configuration** reaches app code only through `src/config/extensionConfig.ts`.
+- **One page, two modes**: `index.html` is the side panel (default) and, as `index.html?popup`, the popup. `openModeService` switches the toolbar button (`chrome.action.setPopup`, `chrome.sidePanel.setPanelBehavior`), stores the choice under `openMode`, and the service worker re-applies it on install, startup and storage changes. Chrome sizes popups to their content, so the popup has a fixed width of 360 px (`html.popup` in `src/app.css`); the side panel is as wide as the user drags it (from about 320 px). Design layouts for both.
+
+### Manifest and permissions
+
+- `manifest.config.ts` is the only source of the manifest; never add a `manifest.json` by hand. Its test checks the permissions — update it with every manifest change.
+- `template-extension` requests only `sidePanel` and `storage`. Add a permission, `host_permissions` or `content_scripts` **only together with the feature that needs it**, and record the reason in {% if options.spec_md %}`SPEC.md`{% else %}the extension's README{% endif %}. Prefer `activeTab` to host permissions, specific origins to `<all_urls>`, and `optional_permissions` + `chrome.permissions.request()` for rarely used features. New permissions can disable an installed extension until the user accepts them.
+- Manifest V3 forbids remote code: bundle every script (no CDN `<script>`, no `eval`/`new Function`). Requests to other sites from extension pages need their origins in `host_permissions`.
+- Content scripts declared in the manifest are classic scripts and cannot `import` chunks: build each one as a self-contained IIFE (e.g. a second `vite build` with `build.lib`, `formats: ['iife']` and `emptyOutDir: false`) and list its output file in `content_scripts` with narrow `matches`.
+
+## Commands
+
+Run everything from the workspace root. `<folder>` is an extension folder such as `template-extension`.
+
+| Command | Use |
+| --- | --- |
+| `npm run dev` | Watch-build every extension into `<folder>/dist` (`vite build --watch`, prefixed output); `npm run dev -- <folder> [<folder>…]` for some. Reload the extension in Chrome after a rebuild. Restart it after editing a `.env`. |
+| `npm run build` | Build every workspace (`npm run build -w <folder>` for one) |
+| `npm run new -- "Tab Organizer"` | New extension `tab-organizer/` from `template-extension/` (`--folder <name>` to choose the folder, `--skip-install`). In fastDev: the **New extension** command, inputs `NAME` and optional `FOLDER` (`run_project_command` with `inputs`) |
+| `npm test` | All tests: the `scripts` project and every extension (`npm test -w <folder>` for one; `npm run test:watch` to rerun on changes) |
+| `npm run check` | **Quality gate:** lint + format check + typecheck + tests, zero warnings |
+| `npm run typecheck` | `tsc` for `scripts/`, then `vue-tsc` in every workspace |
+| `npm run lint` / `npm run lint:fix` | ESLint (type-aware) over the whole workspace |
+| `npm run format` / `npm run format:check` | Prettier |
+| `npm run package` | Build all, then zip each `<folder>/dist` into `<folder>/extension.zip` (`manifest.json` at the archive root) for the Chrome Web Store; `npm run package -- <folder>` zips one. Needs the `zip` command (part of macOS). |
+| `npm run test:coverage` | Tests with a V8 coverage report in `coverage/` |
+
+## Configuration
+
+- **Root `.env`** (git-ignored; `.env.example` is committed): `APP_NAME` is the workspace name ({{ project.name }}). The root scripts print it; extensions do not read it.
+- **`<folder>/.env`** (git-ignored; `<folder>/.env.example` is committed with the same keys) holds the extension's settings. `vite.config.ts` reads it with Vite's `loadEnv` (only `VITE_*` keys), `readExtensionSettings()` validates it (name ≤ 75 characters, description ≤ 132, version = 1–4 numbers ≤ 65535) and fails the build with a clear message, and `.env` is created from `.env.example` when it is missing (by fastDev when the project is created, by `npm run new`, and by every build).
+- **The name comes only from `VITE_EXTENSION_NAME`**: the manifest, the toolbar title, the page title and the header read it (`extensionConfig.name`). Never hardcode an extension name.
+- **Versions**: `VITE_EXTENSION_VERSION` is the only version Chrome and the store see (the `version` in an extension's `package.json` is unused). Raise it in `.env` and `.env.example` for every store upload.
+- `.env` files are read by dotenv loaders only; never parse them by hand. Quote values with spaces (`VITE_EXTENSION_NAME='Tab Organizer'`) and write `$` as `\$`: Vite expands `$VAR` even inside quotes. `npm run new` writes values this way.
+- Every `VITE_*` value is compiled into the extension and visible to its users: never put secrets there.
+- **Add a setting**: the key in `<folder>/.env.example` and `.env` → its type in `src/env.d.ts` → a field in `src/config/extensionConfig.ts` (and `vitest.config.ts` `test.env`) → if the manifest uses it, `readExtensionSettings()` / `createManifest()` and their test. Apply it to `template-extension/` too when every new extension should have it.
+
+## How to
+
+### Add an extension
+
+1. `npm run new -- "Tab Organizer"` (in fastDev: **New extension**, or `run_project_command` with `{ "command": "new", "inputs": { "NAME": "Tab Organizer" } }`) — copies `template-extension/` (without `dist/`, `extension.zip`, `.env`, `node_modules`, `coverage`) to `tab-organizer/`, sets the package name, writes `.env` and `.env.example` (name, version 0.1.0, storage namespace = folder), and runs `npm install` so the lockfile links the new workspace. Cyrillic names are transliterated for the folder; the Chrome name keeps the original text.
+2. Set `VITE_EXTENSION_DESCRIPTION` in its `.env` and `.env.example`, and replace the icons in `public/icons/`.
+3. Replace the Notes example with the extension's features (see below) and describe the extension in {% if options.spec_md %}`SPEC.md`{% else %}its `README.md`{% endif %}.
+4. `npm run build -w tab-organizer`, load `tab-organizer/dist` in Chrome, `npm run check`.
+
+Improvements that every future extension should get go into `template-extension/`; existing extensions do not change with it, so port such changes by hand where needed.
+
+### Add a feature to an extension (example: `bookmarks`)
+
+1. **Data**: types and a repository in `src/services/storage/` (`createLocalStorageRepository<Bookmark[]>('bookmarks', [])`) or a service in `src/services/chrome/` for Chrome APIs (plus the permission in `manifest.config.ts`).
+2. **Store**: `src/stores/useBookmarksStore.ts` — an option store with a typed state interface; actions call the repository/service and set `error` on failure.
+3. **View**: `src/views/BookmarksView.vue`, a route in `src/router/index.ts` and a link in `AppShell.vue` when there is more than one page; reusable parts in `src/components/`.
+4. **Tests**: the repository or service with `stubChrome()` (extend `src/test/chromeStub.ts` for new APIs), the store with `setActivePinia(createPinia())`, the view with `mount()`.
+5. **Service worker**: only for work that must happen without an open page (events, alarms, context menus); register its listeners at the top level of `src/background/service-worker.ts`.
+
+The Notes example (`useNotesStore`, `NotesView.vue`, their tests) shows every layer; remove it when the extension no longer needs it.
+
+### Add a page or an entry point
+
+- A page inside the panel: a view + route (hash URLs such as `index.html#/settings` also work for links).
+- A separate HTML page (options page, new tab page): add the HTML file to `build.rolldownOptions.input` in `vite.config.ts` and reference it in `createManifest()` (`options_ui`, `chrome_url_overrides`…).
+
+### Add dependencies
+
+- Used by several extensions or by the tooling: install in the root — `npm install <pkg>` (runtime) or `npm install -D <pkg>` (tooling).
+- Used by one extension only: `npm install <pkg> -w <folder>`; it is recorded in that extension's `package.json` and still installed into the shared root `node_modules` and the root lockfile.
+- Always run npm from the root; never create a lockfile or `node_modules` inside an extension. Everything is bundled into `dist/`, so the split between `dependencies` and `devDependencies` only documents intent.
+
+## Loading and reloading in Chrome
+
+1. `npm run build` (or keep `npm run dev` running).
+2. `chrome://extensions` → **Developer mode** → **Load unpacked** → select `<folder>/dist` (not the folder itself).
+3. Pin the extension (puzzle icon) and click it: the side panel opens; ⇄ in the header switches to the popup mode and back.
+4. After a rebuild click **Reload** on the extension's card, then reopen the panel or popup. Manifest changes (permissions, entry points) also need Reload.
+5. Debug: the card's **Inspect views: service worker** opens the worker's console; right-click inside the panel → **Inspect** for the page. Errors of the extension appear under **Errors** on its card.
+6. An unpacked extension's id depends on the folder path, and `chrome.storage.local` belongs to that id: loading a copy from another path starts with empty storage.
+
+## Testing
+
+- Vitest runs one project per extension (jsdom) plus `scripts` (Node): `npm test`. Tests live next to the code as `*.test.ts`.
+- `stubChrome()` from `src/test/chromeStub.ts` replaces the global `chrome` with an in-memory `chrome.storage.local` and mocked `action`, `sidePanel` and `windows` APIs; extend it when code uses more APIs.
+- Components and views: `mount()` from `@vue/test-utils` with `global: { plugins: [createPinia()], stubs: { FontAwesomeIcon: true, RouterView: true } }`, then `flushPromises()`.
+- The `VITE_*` values in tests are fixed in each extension's `vitest.config.ts` (`test.env`), independent of `.env`.
+- `manifest.config.test.ts` guards the manifest: permissions, entry points and the setting checks.
+- Unit tests cannot load the extension into Chrome: after UI or manifest changes, load `dist/` and try the change in both the side panel and the popup.
+
+## Definition of done
+
+1. `npm run check` passes with **zero** errors and warnings (lint, formatting, types, tests).
+2. `npm run build` succeeds for every extension, and the changed extension works when loaded in Chrome (side panel and popup, no errors on its card).
+3. New logic is covered by tests next to the code.
+4. Docs match the code: {% if options.spec_md %}`SPEC.md` (features, permissions and why), {% endif %}the extension's `.env.example` and `README.md`, the root `README.md` and this file when commands, structure or rules change.
+5. No new permission, host permission or content script without a feature that needs it.
+
+## Conventions
+
+- TypeScript strict everywhere; no `any`, no `@ts-ignore`, no non-null assertions; explicit return types on functions (tests excepted); `import type` / inline `type` imports.
+- Vue: `<script setup lang="ts">` only; components `PascalCase.vue`, route components `<Name>View.vue`, stores `use<Name>Store` in `use<Name>Store.ts`, services `<name>Service.ts`, repositories `<name>Repository.ts`.
+- Styling: Tailwind utility classes in templates, `dark:` variants (the UI follows the OS theme); global CSS only in `src/app.css`. Icons: import each icon from `@fortawesome/free-solid-svg-icons` and render it with `<FontAwesomeIcon :icon="…" />`.
+- Imports in `src/` are relative and without extensions (`../stores/useNotesStore`); `vite.config.ts` imports `./manifest.config.ts` with its extension (Vite's config loader), and `scripts/` imports use `.ts` extensions (run by Node directly).
+- Let Prettier format (`npm run format`); do not disable lint rules to get green.
+- Write code, comments, UI texts and docs in English.
+
+---
+
+Bootstrapped from `{{ skeleton.id }} {{ skeleton.version }}`.

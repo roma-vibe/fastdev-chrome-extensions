@@ -1,0 +1,136 @@
+schema = 1
+id = "chrome-extensions"
+name = "Chrome Extensions"
+description = "An npm workspace for several Chrome extensions (Manifest V3, Vue 3, Tailwind CSS 4, TypeScript) that share one node_modules and one package-lock.json. The included template extension opens in the side panel or as a popup and has a service worker, Pinia stores, services over chrome.storage.local, a manifest generated from its own .env, a Notes example with tests and a zero-warning quality gate (ESLint, Prettier, vue-tsc, Vitest). `npm run new -- \"Name\"` copies it into a new extension; Dev rebuilds every extension for Load unpacked in Chrome, and Package zips them for the Chrome Web Store."
+category = "web"
+languages = ["node"]
+tags = [
+  "chrome",
+  "extension",
+  "chrome-extension",
+  "manifest-v3",
+  "side-panel",
+  "vue",
+  "tailwind",
+  "typescript",
+  "pinia",
+  "vite",
+  "workspace",
+  "monorepo",
+]
+stack = [
+  "Node.js 24+ (npm workspaces)",
+  "Chrome Manifest V3 (Chrome 141+)",
+  "Vue 3.5",
+  "Vite 8",
+  "Pinia 4",
+  "Vue Router 5",
+  "Tailwind CSS 4",
+  "Font Awesome 7",
+  "TypeScript 6.0",
+  "Vitest 5 + jsdom",
+  "ESLint 10 + Prettier 3",
+]
+
+[requirements]
+node = ">=24"
+npm = ">=10"
+zip = ">=3"        # npm run package
+chrome = ">=141"   # loading the extensions (chrome.sidePanel.close needs 141)
+
+# The workspace name; every extension has its own .env (VITE_EXTENSION_NAME, …).
+[env]
+APP_NAME = "{{ project.name }}"
+
+[[set]]
+file = "package.json"
+path = ["name"]
+value = "{{ project.slug }}"
+
+[[set]]
+file = "package-lock.json"
+path = ["name"]
+value = "{{ project.slug }}"
+
+[[set]]
+file = "package-lock.json"
+path = ["packages", "", "name"]
+value = "{{ project.slug }}"
+
+[[setup]]
+label = "Install dependencies"
+run = "npm install"
+
+[commands.dev]
+label = "Dev"
+description = "Rebuilds every extension into its dist/ folder on each change; reload the extension on chrome://extensions after a rebuild."
+run = "npm run dev"
+long = true
+primary = true
+
+[commands.build]
+label = "Build"
+run = "npm run build"
+
+[commands.test]
+label = "Test"
+run = "npm test"
+
+[commands.check]
+label = "Check"
+run = "npm run check"
+
+[commands.package]
+label = "Package"
+description = "Builds every extension and zips its dist/ folder into extension.zip for the Chrome Web Store."
+run = "npm run package"
+
+[commands.format]
+label = "Format"
+description = "Formats all files with Prettier."
+run = "npm run format"
+
+# npm run new: copies template-extension/ into a new extension folder and links it with npm install.
+[commands.new]
+label = "New extension"
+description = "Creates a new extension from template-extension/ and links it into the workspace."
+run = 'npm run new -- "$NAME" --folder="$FOLDER"'
+inputs = [
+  { name = "NAME", label = "Extension name", placeholder = "Tab Organizer" },
+  { name = "FOLDER", label = "Folder (optional)", placeholder = "tab-organizer", optional = true },
+]
+
+[verify]
+commands = ["check", "build"]
+
+# Chrome loads extensions from disk, so the preview is a build of the template extension.
+[preview]
+command = "build"
+path = "template-extension/dist"
+message = "The template extension is built. Open chrome://extensions, turn on Developer mode, click Load unpacked and select the dist folder shown here. Then click the extension's toolbar button: it opens in the side panel with the Notes example; the ⇄ button in its header switches to a popup."
+
+[updates]
+ecosystem = "npm"
+# typescript-eslint 8 supports TypeScript < 6.1; @types/node follows the Node.js 24 baseline.
+hold = { typescript = "<6.1", "@types/node" = "24" }
+
+[translations.ru]
+"Chrome Extensions" = "Расширения Chrome"
+"An npm workspace for several Chrome extensions (Manifest V3, Vue 3, Tailwind CSS 4, TypeScript) that share one node_modules and one package-lock.json. The included template extension opens in the side panel or as a popup and has a service worker, Pinia stores, services over chrome.storage.local, a manifest generated from its own .env, a Notes example with tests and a zero-warning quality gate (ESLint, Prettier, vue-tsc, Vitest). `npm run new -- \"Name\"` copies it into a new extension; Dev rebuilds every extension for Load unpacked in Chrome, and Package zips them for the Chrome Web Store." = "npm-workspace для нескольких расширений Chrome (Manifest V3, Vue 3, Tailwind CSS 4, TypeScript) с общими node_modules и package-lock.json. Шаблонное расширение открывается в боковой панели или во всплывающем окне; в нём есть service worker, Pinia-сторы, сервисы поверх chrome.storage.local, manifest, который собирается из собственного .env, пример «Заметки» с тестами и проверка качества без предупреждений (ESLint, Prettier, vue-tsc, Vitest). `npm run new -- \"Имя\"` копирует его в новое расширение; Dev пересобирает все расширения для загрузки в Chrome через «Загрузить распакованное», а Package упаковывает их в zip для Chrome Web Store."
+"Install dependencies" = "Установка зависимостей"
+"Dev" = "Dev"
+"Rebuilds every extension into its dist/ folder on each change; reload the extension on chrome://extensions after a rebuild." = "Пересобирает каждое расширение в его папку dist/ при каждом изменении; после пересборки перезагрузите расширение на chrome://extensions."
+"Build" = "Сборка"
+"Test" = "Тесты"
+"Check" = "Проверка"
+"Package" = "Упаковка"
+"Builds every extension and zips its dist/ folder into extension.zip for the Chrome Web Store." = "Собирает каждое расширение и упаковывает его папку dist/ в extension.zip для Chrome Web Store."
+"Format" = "Форматирование"
+"Formats all files with Prettier." = "Форматирует все файлы через Prettier."
+"New extension" = "Новое расширение"
+"Creates a new extension from template-extension/ and links it into the workspace." = "Создаёт новое расширение из template-extension/ и подключает его к workspace."
+"Extension name" = "Название расширения"
+"Tab Organizer" = "Tab Organizer"
+"Folder (optional)" = "Папка (необязательно)"
+"tab-organizer" = "tab-organizer"
+"The template extension is built. Open chrome://extensions, turn on Developer mode, click Load unpacked and select the dist folder shown here. Then click the extension's toolbar button: it opens in the side panel with the Notes example; the ⇄ button in its header switches to a popup." = "Шаблонное расширение собрано. Откройте chrome://extensions, включите «Режим разработчика», нажмите «Загрузить распакованное» и выберите показанную здесь папку dist. Затем нажмите кнопку расширения на панели инструментов: оно откроется в боковой панели с примером «Заметки»; кнопка ⇄ в его заголовке переключает его во всплывающее окно."

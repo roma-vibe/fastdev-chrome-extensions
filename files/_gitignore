@@ -1,0 +1,21 @@
+# Dependencies: one shared node_modules at the root
+node_modules/
+
+# Build output (Chrome loads <extension>/dist) and packages
+dist/
+extension.zip
+coverage/
+*.tsbuildinfo
+
+# Environment: the root .env and every extension's .env (keep .env.example in Git)
+.env
+.env.*
+!.env.example
+
+# Logs and OS / editor files
+*.log
+npm-debug.log*
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json

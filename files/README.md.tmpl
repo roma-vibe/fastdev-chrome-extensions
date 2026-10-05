@@ -1,0 +1,68 @@
+# {{ project.name }}
+
+A workspace for Chrome extensions (Manifest V3) built with Vue 3, Tailwind CSS 4 and TypeScript. Every extension is a folder of this repository; they all share one `node_modules` and one `package-lock.json`.
+
+## Requirements
+
+- Node.js 24 or newer, npm 10 or newer
+- Google Chrome 141 or newer
+- `zip` for `npm run package` (part of macOS)
+
+## Quick start
+
+```sh
+[ -f .env ] || cp .env.example .env   # first run after cloning
+npm install
+npm run build
+```
+
+Then open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** and select `template-extension/dist`. Click the extension's toolbar button to open it in the side panel.
+
+## Add an extension
+
+```sh
+npm run new -- "Tab Organizer"   # creates tab-organizer/ from template-extension/
+npm run build -w tab-organizer
+```
+
+In fastDev, the **New extension** command does the same: it asks for the name and, optionally, the folder.
+
+Load `tab-organizer/dist` in Chrome the same way. The name, description and version of each extension live in its own `.env` (`.env.example` is the committed copy).
+
+## Scripts
+
+| Command                              | What it does                                                                      |
+| ------------------------------------ | --------------------------------------------------------------------------------- |
+| `npm run dev`                        | Rebuild every extension into its `dist/` on each change (`-- <folder>` for one)   |
+| `npm run build`                      | Build every extension (`npm run build -w <folder>` for one)                       |
+| `npm run new -- "Name"`              | Create a new extension from `template-extension/`                                 |
+| `npm test`                           | Run the tests of every extension and of the scripts (Vitest)                      |
+| `npm run check`                      | Lint, format check, type-check and tests — the quality gate before commits        |
+| `npm run lint` / `npm run lint:fix`  | ESLint                                                                            |
+| `npm run format`                     | Format all files with Prettier                                                    |
+| `npm run typecheck`                  | Type-check the scripts and every extension                                        |
+| `npm run package`                    | Build, then zip each `dist/` into `<folder>/extension.zip` for the Chrome Web Store |
+
+After a rebuild, click **Reload** on the extension's card in `chrome://extensions` and reopen its panel.
+
+## Structure
+
+```text
+package.json          workspaces and shared dependencies
+scripts/              dev, new and package scripts (TypeScript, run by Node)
+template-extension/   the base extension that npm run new copies
+<folder>/             your extensions: src/, public/icons/, .env, manifest.config.ts, dist/ after a build
+```
+
+Each extension has a side panel page (also usable as a popup), a service worker, Pinia stores and services that wrap the `chrome.*` APIs; `template-extension/README.md` describes its files.
+
+## Configuration
+
+- `.env` in the root: `APP_NAME` — the name of this workspace, printed by the scripts.
+- `<folder>/.env`: `VITE_EXTENSION_NAME`, `VITE_EXTENSION_DESCRIPTION`, `VITE_EXTENSION_VERSION` and `VITE_STORAGE_NAMESPACE`. They go into the generated `manifest.json` and the app, so never put secrets there.
+
+All `.env` files are git-ignored; the `.env.example` files are committed.
+
+## Contributing
+
+Run `npm run check` and `npm run build` before every commit. Both must pass without errors or warnings.

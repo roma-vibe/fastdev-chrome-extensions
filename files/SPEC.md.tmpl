@@ -1,0 +1,98 @@
+# {{ project.name }} — Specification
+
+Status: draft · Created {{ project.created_at }}
+
+<!--
+Agents: this is the product specification of the workspace and the source of truth for what to
+build. It describes every Chrome extension this repository should contain. Complete it from the
+initial brief before implementing: ask the owner about anything unclear, replace every guidance
+comment with real content, delete sections that do not apply, and keep it current as decisions are
+made. Add one "Extension:" section per extension (copy the example structure below).
+-->
+
+## Initial brief
+
+{% if project.brief | trim %}{{ project.brief | trim }}{% else %}_No brief was given. Ask the owner which extensions this workspace should contain and what each one should do, and record the answer here._{% endif %}
+
+## Goals
+
+<!-- 3–5 outcomes that define success for the workspace as a whole. Why do these extensions exist, and how will we know they work? -->
+
+## Users
+
+<!-- Who installs the extensions (only the owner, a team, the public through the Chrome Web Store), on which Chrome versions (141+ is required), and what they need to get done. -->
+
+## Extensions
+
+<!--
+One entry per extension, in the order they should be built. `template-extension` is the base for
+new extensions (`npm run new -- "Name"`), not a product: list it only if it should be published.
+
+| Folder | Name (VITE_EXTENSION_NAME) | Purpose | Status |
+| --- | --- | --- | --- |
+| tab-organizer | Tab Organizer | Groups and saves browser tabs | planned |
+-->
+
+### Extension: _Name_ (`folder`)
+
+<!-- Copy this section for every extension. -->
+
+#### Purpose
+
+<!-- One paragraph: the problem it solves and for whom. -->
+
+#### Features
+
+<!--
+User stories with testable acceptance criteria and edge cases. Example:
+
+- As a user I can save all tabs of the current window as a named group from the side panel.
+- Acceptance: the group appears at the top of the list immediately and survives a browser restart; an empty name is rejected.
+-->
+
+#### UI
+
+<!-- Side panel and/or popup (both show the same page; the ⇄ button switches), pages and routes, empty / loading / error states, keyboard use. Other entry points: options page, context menu, keyboard shortcuts, badge text. -->
+
+#### Permissions and access
+
+<!--
+Every permission, host permission and content script with the feature that needs it. Start from
+the template's minimum (`sidePanel`, `storage`) and add only what a feature requires. Example:
+
+| Permission | Why |
+| --- | --- |
+| `tabs` | Read tab titles and URLs to show and group them |
+-->
+
+#### Data
+
+<!-- What is stored in chrome.storage (keys, shapes, expected size; chrome.storage.local holds about 10 MB by default), what is synced or sent anywhere, and how old data is migrated. -->
+
+#### External services
+
+<!-- APIs or sites it talks to (origins for host_permissions), authentication, rate limits, what happens offline. Write "None" if it works only locally. -->
+
+## Shared behaviour
+
+<!-- Conventions every extension follows: look and feel, naming, settings, shared code, versioning and release notes. -->
+
+## Non-functional requirements
+
+<!-- Privacy (what user data is read, stored or transmitted; the store's privacy disclosures), security (minimal permissions, no remote code, no secrets in VITE_* values), performance (fast panel start-up, a service worker that stays idle), accessibility, supported Chrome versions. -->
+
+## Publishing
+
+<!-- Per extension: unpacked only, or the Chrome Web Store (listing texts, screenshots, category, privacy policy URL, visibility). Packages come from `npm run package`; raise VITE_EXTENSION_VERSION for every upload. -->
+
+## Open questions
+
+<!-- Decisions that need the owner. Remove an item once it is answered and record the answer in the relevant section. -->
+
+- _None yet._
+
+## Milestones
+
+<!-- Small, shippable increments in order, e.g. one extension or one feature each. Each one ends with `npm run check` and `npm run build` passing and the extension tried in Chrome. -->
+
+1. _To be defined._

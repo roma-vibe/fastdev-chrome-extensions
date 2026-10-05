@@ -1,0 +1,20 @@
+@import 'tailwindcss';
+
+:root {
+  color-scheme: light dark;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
+
+body {
+  margin: 0;
+  min-width: 240px;
+}
+
+/* Chrome sizes popups to their content (up to 800 px): give the popup a fixed width.
+   The side panel keeps the width the user drags it to. */
+html.popup body {
+  width: 360px;
+}
