@@ -8,7 +8,6 @@ declare global {
     readonly VITE_EXTENSION_NAME: string;
     readonly VITE_EXTENSION_DESCRIPTION: string;
     readonly VITE_EXTENSION_VERSION: string;
-    readonly VITE_STORAGE_NAMESPACE: string;
   }
 
   interface ImportMeta {

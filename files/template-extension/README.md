@@ -13,7 +13,6 @@ This folder is one workspace of the repository: its dependencies come from the r
 | `VITE_EXTENSION_NAME`        | Name in Chrome, in the Chrome Web Store and in the header (≤ 75 characters) |
 | `VITE_EXTENSION_DESCRIPTION` | Description on `chrome://extensions` and in the store (≤ 132 characters)    |
 | `VITE_EXTENSION_VERSION`     | Version, 1–4 dot-separated numbers; raise it for every store upload        |
-| `VITE_STORAGE_NAMESPACE`     | Prefix of storage keys written by older versions (moved to plain keys)     |
 
 Every `VITE_*` value is built into the extension and readable by anyone who installs it: never put secrets here.
 

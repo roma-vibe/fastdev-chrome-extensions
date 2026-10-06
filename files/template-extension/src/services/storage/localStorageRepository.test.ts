@@ -30,12 +30,4 @@ describe('createLocalStorageRepository', () => {
     await repository.remove();
     await expect(repository.get()).resolves.toBe('fallback');
   });
-
-  it('moves a value from the old namespaced key to the plain key', async () => {
-    // VITE_STORAGE_NAMESPACE is "test-extension" in tests (vitest.config.ts).
-    storage.set('test-extension:test', 'legacy');
-    const repository = createLocalStorageRepository('test', 'fallback');
-    await expect(repository.get()).resolves.toBe('legacy');
-    expect(storage.get('test')).toBe('legacy');
-  });
 });

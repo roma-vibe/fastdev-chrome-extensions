@@ -156,7 +156,6 @@ export function createExtension(options: NewExtensionOptions): NewExtension {
     {
       VITE_EXTENSION_NAME: name,
       VITE_EXTENSION_VERSION: INITIAL_VERSION,
-      VITE_STORAGE_NAMESPACE: folder,
     },
   );
 

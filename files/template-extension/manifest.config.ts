@@ -8,7 +8,6 @@ export interface ExtensionSettings {
   readonly name: string;
   readonly description: string;
   readonly version: string;
-  readonly storageNamespace: string;
 }
 
 /** Output file of the service worker entry (src/background/service-worker.ts), see vite.config.ts. */
@@ -28,7 +27,6 @@ export function readExtensionSettings(env: Record<string, string | undefined>): 
     name: env.VITE_EXTENSION_NAME?.trim() ?? '',
     description: env.VITE_EXTENSION_DESCRIPTION?.trim() ?? '',
     version: env.VITE_EXTENSION_VERSION?.trim() ?? '',
-    storageNamespace: env.VITE_STORAGE_NAMESPACE?.trim() ?? '',
   };
 
   const problems: string[] = [];
@@ -46,7 +44,6 @@ export function readExtensionSettings(env: Record<string, string | undefined>): 
       `VITE_EXTENSION_VERSION "${settings.version}" must be 1-4 dot-separated numbers (0-65535)`,
     );
   }
-  if (!settings.storageNamespace) problems.push('VITE_STORAGE_NAMESPACE is empty');
 
   if (problems.length > 0) {
     throw new Error(`Invalid extension settings in .env: ${problems.join('; ')}.`);

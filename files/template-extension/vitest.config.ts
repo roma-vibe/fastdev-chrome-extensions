@@ -15,7 +15,6 @@ export default defineProject({
       VITE_EXTENSION_NAME: 'Test Extension',
       VITE_EXTENSION_DESCRIPTION: 'Test description',
       VITE_EXTENSION_VERSION: '1.0.0',
-      VITE_STORAGE_NAMESPACE: 'test-extension',
     },
   },
 });

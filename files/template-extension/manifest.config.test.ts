@@ -5,7 +5,6 @@ const env = {
   VITE_EXTENSION_NAME: ' Tab Organizer ',
   VITE_EXTENSION_DESCRIPTION: 'Groups tabs.',
   VITE_EXTENSION_VERSION: '1.2.3',
-  VITE_STORAGE_NAMESPACE: 'tab-organizer',
 };
 
 describe('readExtensionSettings', () => {
@@ -14,7 +13,6 @@ describe('readExtensionSettings', () => {
       name: 'Tab Organizer',
       description: 'Groups tabs.',
       version: '1.2.3',
-      storageNamespace: 'tab-organizer',
     });
   });
 
@@ -22,7 +20,7 @@ describe('readExtensionSettings', () => {
     expect(() =>
       readExtensionSettings({ VITE_EXTENSION_NAME: '', VITE_EXTENSION_VERSION: '1.02' }),
     ).toThrow(
-      'VITE_EXTENSION_NAME is empty; VITE_EXTENSION_VERSION "1.02" must be 1-4 dot-separated numbers (0-65535); VITE_STORAGE_NAMESPACE is empty',
+      'VITE_EXTENSION_NAME is empty; VITE_EXTENSION_VERSION "1.02" must be 1-4 dot-separated numbers (0-65535)',
     );
   });
 

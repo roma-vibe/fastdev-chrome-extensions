@@ -42,7 +42,7 @@ template-extension/        the base extension (structure below)
 
 ```text
 <extension>/
-  .env / .env.example      VITE_EXTENSION_NAME, _DESCRIPTION, _VERSION, VITE_STORAGE_NAMESPACE
+  .env / .env.example      VITE_EXTENSION_NAME, VITE_EXTENSION_DESCRIPTION, VITE_EXTENSION_VERSION
   package.json             name = folder name; scripts build, dev, typecheck, test; own dependencies only
   manifest.config.ts       createManifest(): permissions, entry points, icons; readExtensionSettings() checks .env
   manifest.config.test.ts
@@ -121,7 +121,7 @@ Run everything from the workspace root. `<folder>` is an extension folder such a
 
 ### Add an extension
 
-1. `npm run new -- "Tab Organizer"` (in fastDev: **New extension**, or `run_project_command` with `{ "command": "new", "inputs": { "NAME": "Tab Organizer" } }`) — copies `template-extension/` (without `dist/`, `extension.zip`, `.env`, `node_modules`, `coverage`) to `tab-organizer/`, sets the package name, writes `.env` and `.env.example` (name, version 0.1.0, storage namespace = folder), and runs `npm install` so the lockfile links the new workspace. Cyrillic names are transliterated for the folder; the Chrome name keeps the original text.
+1. `npm run new -- "Tab Organizer"` (in fastDev: **New extension**, or `run_project_command` with `{ "command": "new", "inputs": { "NAME": "Tab Organizer" } }`) — copies `template-extension/` (without `dist/`, `extension.zip`, `.env`, `node_modules`, `coverage`) to `tab-organizer/`, sets the package name, writes `.env` and `.env.example` (name, version 0.1.0), and runs `npm install` so the lockfile links the new workspace. Cyrillic names are transliterated for the folder; the Chrome name keeps the original text.
 2. Set `VITE_EXTENSION_DESCRIPTION` in its `.env` and `.env.example`, and replace the icons in `public/icons/`.
 3. Replace the Notes example with the extension's features (see below) and describe the extension in {% if options.spec_md %}`SPEC.md`{% else %}its `README.md`{% endif %}.
 4. `npm run build -w tab-organizer`, load `tab-organizer/dist` in Chrome, `npm run check`.

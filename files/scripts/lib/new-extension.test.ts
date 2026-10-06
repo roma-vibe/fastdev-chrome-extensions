@@ -107,9 +107,9 @@ describe('.env writing', () => {
   it('replaces existing keys, keeps comments and appends missing keys', () => {
     const text = '# Name\nVITE_EXTENSION_NAME=Old\n# Version\nVITE_EXTENSION_VERSION=9.9\n';
     expect(
-      setEnvValues(text, { VITE_EXTENSION_NAME: 'New One', VITE_STORAGE_NAMESPACE: 'new-one' }),
+      setEnvValues(text, { VITE_EXTENSION_NAME: 'New One', VITE_EXTENSION_DESCRIPTION: 'New.' }),
     ).toBe(
-      "# Name\nVITE_EXTENSION_NAME='New One'\n# Version\nVITE_EXTENSION_VERSION=9.9\nVITE_STORAGE_NAMESPACE=new-one\n",
+      "# Name\nVITE_EXTENSION_NAME='New One'\n# Version\nVITE_EXTENSION_VERSION=9.9\nVITE_EXTENSION_DESCRIPTION=New.\n",
     );
   });
 });
@@ -132,7 +132,7 @@ describe('createExtension', () => {
     write('template-extension/README.md', '# Template Extension\n\nAbout it.\n');
     write(
       'template-extension/.env.example',
-      "# Name\nVITE_EXTENSION_NAME='Template Extension'\nVITE_EXTENSION_DESCRIPTION='Does things.'\nVITE_EXTENSION_VERSION=1.4.0\nVITE_STORAGE_NAMESPACE=template-extension\n",
+      "# Name\nVITE_EXTENSION_NAME='Template Extension'\nVITE_EXTENSION_DESCRIPTION='Does things.'\nVITE_EXTENSION_VERSION=1.4.0\n",
     );
     write('template-extension/.env', 'VITE_EXTENSION_NAME=Local\n');
     write('template-extension/src/main.ts', 'export {};\n');
@@ -164,7 +164,7 @@ describe('createExtension', () => {
     expect(read('README.md')).toBe('# Tab Organizer\n\nAbout it.\n');
 
     const expectedEnv =
-      "# Name\nVITE_EXTENSION_NAME='Tab Organizer'\nVITE_EXTENSION_DESCRIPTION='Does things.'\nVITE_EXTENSION_VERSION=0.1.0\nVITE_STORAGE_NAMESPACE=tab-organizer\n";
+      "# Name\nVITE_EXTENSION_NAME='Tab Organizer'\nVITE_EXTENSION_DESCRIPTION='Does things.'\nVITE_EXTENSION_VERSION=0.1.0\n";
     expect(read('.env.example')).toBe(expectedEnv);
     expect(read('.env')).toBe(expectedEnv);
     // The template itself is untouched.
